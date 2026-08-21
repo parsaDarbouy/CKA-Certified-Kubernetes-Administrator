@@ -1,5 +1,6 @@
 #!/bin/bash
-# CKA practice cluster — creates a local Kubernetes cluster with kind.
+# CKA practice cluster — creates a local Kubernetes cluster with kind
+# (1 control-plane + 1 worker).
 # Requires: Docker (running), kubectl, curl.
 # 
 # Usage:
@@ -142,13 +143,26 @@ main() {
   # Create cluster with specific Kubernetes version
   echo ""
   log_info "Creating kind cluster '${CLUSTER_NAME}' with Kubernetes ${KUBE_VERSION} ..."
-  log_info "(This may take 1-2 minutes on first run)"
+  log_info "(1 control-plane + 1 worker; this may take 1-2 minutes on first run)"
   echo ""
-  
+
+  local kind_config
+  kind_config="$(mktemp)"
+  cat > "$kind_config" <<'EOF'
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+EOF
+
   kind create cluster \
     --name "$CLUSTER_NAME" \
     --image "kindest/node:${KUBE_VERSION}" \
+    --config "$kind_config" \
     --wait 300s
+
+  rm -f "$kind_config"
 
   configure_kubeconfig
 
